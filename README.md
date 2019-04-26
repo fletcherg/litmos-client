@@ -38,10 +38,18 @@ Disconnect-Litmos
 
 
 # Functions
+See below for a list of available commands.
+
 [Connect-Litmos](Litmos/Connect-Litmos.md)
+
 [Create-LitmosTeam](Litmos/Create-LitmosTeam.md)
+
 [Create-LitmosUser](Litmos/Create-LitmosUser.md)
+
 [Get-LitmosTeam](Litmos/Get-LitmosTeam.md)
+
 [Get-LitmosUser](Litmos/Get-LitmosUser.md)
+
 [Update-LitmosUser](Litmos/Update-LitmosUser.md)
+
 [Disconnect-Litmos](Litmos/Disonnect-Litmos.md)

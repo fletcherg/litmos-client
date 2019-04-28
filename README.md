@@ -4,6 +4,8 @@ Basic PowerShell client implementation for Litmos LMS API.
 
 https://support.litmos.com/hc/en-us/articles/227734667-Overview-Developer-API
 
+This has been largely based on the [ConnectWise-Manage-Powershell](https://github.com/LabtechConsulting/ConnectWise-Manage-Powershell) by [ChrisTaylorRocks](https://github.com/ChrisTaylorRocks)
+
 # Getting Started
 
 You will need a Litmos account setup, and an API key

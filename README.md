@@ -19,25 +19,21 @@ The following example will let you login
 
 ```
 
-$apiUrl = "litmos.com.au"
-$tenantName = "testTenant"
-$apiKey = "blablabla"
-
-$Credentials = Get-Credential
+$tenantName = "sandbox"
+$apiKey = "943f6ae4-c986-44ec-b370-7570c8aa2c79"
+$server = "api.litmos.com.au"
 
 # Load the module into memory
 iwr 'https://raw.githubusercontent.com/gfletche/litmos-client/master/litmos-client.psm1' | iex
 
-# Connect to Manage server
-Connect-Litmos -url $apiURL -tenantName $TenantName -apiKey $apiKey
-
+# make connection to Litmos
+Connect-Litmos -server $server -apiKey $apiKey -tenantName $tenantName
 
 Get-LitmosUser -All
 
 # Disconnect from Litmos
 Disconnect-Litmos
 ```
-
 
 # Functions
 See below for a list of available commands.
@@ -55,3 +51,10 @@ See below for a list of available commands.
 [Update-LitmosUser](Litmos/Update-LitmosUser.md)
 
 [Disconnect-Litmos](Litmos/Disonnect-Litmos.md)
+
+
+
+# To Do
+
+* Remove some hacky shortcuts... sorry..
+* Add support for more litmos functions

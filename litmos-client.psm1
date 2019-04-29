@@ -1,4 +1,45 @@
 #region [Helpers]-------
+function ConvertFrom-XmlPart {
+    param(
+        $xml
+    )
+	# https://consciouscipher.wordpress.com/2015/06/05/converting-xml-to-powershell-psobject/ 
+    $hash = @{}
+    $xml | Get-Member -MemberType Property | `
+        % {
+            $name = $_.Name
+            if ($_.Definition.StartsWith("string ")) {
+                $hash.($Name) = $xml.$($Name)
+            } elseif ($_.Definition.StartsWith("System.Object[] ")) {
+                $obj = $xml.$($Name)
+                $hash.($Name) = $($obj | %{ $_.tag }) -join "; "
+            } elseif ($_.Definition.StartsWith("System.Xml")) {
+                $obj = $xml.$($Name)
+                $hash.($Name) = @{}
+                if ($obj.HasAttributes) {
+                    $attrName = $obj.Attributes | Select-Object -First 1 | % { $_.Name }
+                    if ($attrName -eq "tag") {
+                        $hash.($Name) = $($obj | % { $_.tag }) -join "; "
+                    } else {
+                        $hash.($Name) = ConvertFrom-XmlPart $obj
+                    }
+                }
+                if ($obj.HasChildNodes) {
+                    $obj.ChildNodes | % { $hash.($Name).($_.Name) = ConvertFrom-XmlPart $($obj.$($_.Name)) }
+                }
+            }
+        }
+    return $hash
+}
+ 
+function ConvertFrom-Xml {
+    param(
+        $xml
+    )
+    $hash = ConvertFrom-XmlPart($xml)
+    return New-Object PSObject -Property $hash
+}
+
 function Connect-Litmos {
     <#
         .SYNOPSIS
@@ -205,6 +246,18 @@ function Invoke-LitmosRequest {
             Body = $Body
 			ContentType = "application/xml"
         }
+	} elseif ($method -eq "POST") {
+		$WebRequestArguments = @{
+            URI = "https://$($global:litmosconnection.server)/$($endpoint)?apikey=$($global:litmosconnection.apiKey)&source=$($global:litmosconnection.tenantName)"
+            Method = "POST"
+            Body = $Body
+			ContentType = "application/xml"
+        }
+	} elseif ($method -eq "DELETE") {
+		$WebRequestArguments = @{
+            URI = "https://$($global:litmosconnection.server)/$($endpoint)?apikey=$($global:litmosconnection.apiKey)&source=$($global:litmosconnection.tenantName)"
+            Method = "DELETE"
+        }
 	} else {
 		Write-Error "Method $($method) not implemented"
 		return
@@ -254,7 +307,11 @@ function Invoke-LitmosRequest {
         Write-Error ($ErrorMessage | out-string)
         return
     }
-	return ([xml]$result.content).ChildNodes.SelectNodes("*")
+	if ($method -eq "GET") {
+		return ([xml]$result.content).ChildNodes.SelectNodes("*")
+	} else {
+		return $result
+	}
 }
 
 function Invoke-LitmosAllResult {
@@ -354,8 +411,201 @@ function Get-LitmosUser {
 		$res = Invoke-LitmosAllResult -endpoint "Users" -Arguments $PsBoundParameters
 	}
 	
+	#return $res | % { ConvertFrom-XML $_ }
 	return $res
 	 
+}
+
+
+function Update-LitmosUser {
+    <#
+        .SYNOPSIS
+        This function will Update a litmos user based on ID
+
+        .PARAMETER userid
+        ID of the user to update
+
+        .PARAMETER propeties
+        Hashtable of properties to update. Must include required parameters per API doc.
+		
+        .NOTES
+        Author: fletcherg
+        Date: 28/04/2019
+
+        .LINK
+        https://github.com/fletcherg/litmos-client
+    #>
+    [CmdletBinding()]
+    param(
+        $properties,
+		[Parameter(Mandatory=$true)]
+        [string]$userid
+    )
+	
+	$endpoint = "users/$($userId)"
+
+	$reqFields = "Id","UserName","FirstName","LastName","FullName", `
+			"Email","Active","PhoneWork","PhoneMobile","SkipFirstLogin", `
+			"Street1","Street2","City","State","PostalCode","Country", `
+			"CompanyName","JobTitle","CustomField1","CustomField10","Website"
+	
+	foreach ($reqField in $reqFields) {
+		if ($properties.Keys -notcontains $reqField) {
+			Write-Error "Did not include $($reqField) in update params"
+			return
+		}
+	}
+$body = @"
+<User xmlns:i="http://www.w3.org/2001/XMLSchema-instance">
+	<Id>$($properties.Id)</Id>
+    <UserName>$($properties.UserName)</UserName>
+    <FirstName>$($properties.FirstName)</FirstName>
+    <LastName>$($properties.LastName)</LastName>
+    <FullName>$($properties.FullName)</FullName>
+    <Email>$($properties.Email)</Email>
+    <Active>$($properties.Active)</Active>
+	<PhoneWork>$($properties.PhoneWork)</PhoneWork>
+	<PhoneMobile>$($properties.PhoneMobile)</PhoneMobile>
+    <SkipFirstLogin>$($properties.SkipFirstLogin)</SkipFirstLogin>
+    <Street1>$($properties.Street1)</Street1>
+    <Street2>$($properties.Street2)</Street2>
+    <City>$($properties.City)</City>
+    <State>$($properties.State)</State>
+    <PostalCode>$($properties.PostalCode)</PostalCode>
+    <Country>$($properties.Country)</Country>
+    <CompanyName>$($properties.CompanyName)</CompanyName>
+    <JobTitle>$($properties.JobTitle)</JobTitle>
+    <CustomField1>$($properties.CustomField1)</CustomField1>
+    <CustomField10>$($properties.CustomField10)</CustomField10>
+    <Website>$($properties.Website)</Website>
+</User>
+"@.replace("&","&amp;")
+
+	$res = Invoke-LitmosRequest -endpoint $endpoint -method "PUT" -body $body
+	if ($res.StatusCode -eq 200) {
+		Write-Verbose "Updated OK"
+		return $true
+	} else {
+		Write-Error "Error in updating user $($userId)"
+		return $false
+	}
+	
+}
+
+
+function Create-LitmosUser {
+    <#
+        .SYNOPSIS
+        This function will Create a litmos user based on ID
+
+        .PARAMETER userid
+        ID of the user to update
+
+        .PARAMETER propeties
+        Hashtable of properties to update. Must include required parameters per API doc.
+		
+        .NOTES
+        Author: fletcherg
+        Date: 28/04/2019
+
+        .LINK
+        https://github.com/fletcherg/litmos-client
+    #>
+    [CmdletBinding()]
+    param(
+        $properties
+    )
+	
+	$endpoint = "users"
+	
+	$reqFields = "UserName","FirstName","LastName","FullName", `
+			"Email","Active","PhoneWork","PhoneMobile", "Password", `
+			"Street1","Street2","City","State","PostalCode","Country", `
+			"CompanyName","JobTitle","CustomField1","CustomField10","Website"
+	
+	foreach ($reqField in $reqFields) {
+		if ($properties.Keys -notcontains $reqField) {
+			Write-Error "Did not include $($reqField) in update params"
+			return
+		}
+	}
+
+	
+$body = @"
+<User xmlns:i="http://www.w3.org/2001/XMLSchema-instance">
+	<Id></Id>
+    <UserName>$($properties.UserName)</UserName>
+    <FirstName>$($properties.FirstName)</FirstName>
+    <LastName>$($properties.LastName)</LastName>
+    <FullName>$($properties.FullName)</FullName>
+    <Email>$($properties.Email)</Email>
+	<AccessLevel>learner</AccessLevel>
+	<DisableMessages>false</DisableMessages>
+    <Active>$($properties.Active)</Active>
+	<Skype></Skype>
+	<PhoneWork>$($properties.PhoneWork)</PhoneWork>
+	<PhoneMobile>$($properties.PhoneMobile)</PhoneMobile>
+	<LastLogin></LastLogin> 
+	<LoginKey></LoginKey>
+	<IsCustomUsername>false</IsCustomUsername>
+	<Password>$($properties.Password)</Password>
+    <SkipFirstLogin>true</SkipFirstLogin>
+	<TimeZone></TimeZone>
+    <Street1>$($properties.Street1)</Street1>
+    <Street2>$($properties.Street2)</Street2>
+    <City>$($properties.City)</City>
+    <State>$($properties.State)</State>
+    <PostalCode>$($properties.PostalCode)</PostalCode>
+    <Country>$($properties.Country)</Country>
+    <CompanyName>$($properties.CompanyName)</CompanyName>
+    <JobTitle>$($properties.JobTitle)</JobTitle>
+    <CustomField1>$($properties.CustomField1)</CustomField1>
+    <CustomField10>$($properties.CustomField10)</CustomField10>
+    <Website>$($properties.Website)</Website>
+</User>
+"@.replace("&","&amp;")
+
+	$res = Invoke-LitmosRequest -endpoint $endpoint -method "POST" -body $body
+	if ($res.StatusCode -eq 200) {
+		Write-Verbose "Updated OK"
+		return $true
+	} else {
+		Write-Error "Error in creating user"
+		return $false
+	}	
+}
+
+function Remove-LitmosUser {
+    <#
+        .SYNOPSIS
+        This function will remove a litmos user based on ID
+
+        .PARAMETER userid
+        ID of the user to remove
+		
+        .NOTES
+        Author: fletcherg
+        Date: 28/04/2019
+
+        .LINK
+        https://github.com/fletcherg/litmos-client
+    #>
+    [CmdletBinding()]
+    param(
+		[Parameter(Mandatory=$true)]
+        [string]$userid
+    )
+	
+	$endpoint = "users/$($userId)"
+
+	$res = Invoke-LitmosRequest -endpoint $endpoint -method "DELETE"
+	if ($res.StatusCode -eq 200) {
+		Write-Verbose "Deleted OK"
+		return $true
+	} else {
+		Write-Error "Error in deleting user $($userId)"
+		return $false
+	}
 }
 #endregion [Users]-------
 

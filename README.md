@@ -4,7 +4,7 @@ Basic PowerShell client implementation for Litmos LMS API.
 
 https://support.litmos.com/hc/en-us/articles/227734667-Overview-Developer-API
 
-Only some functions have been implemented, and I got a bit lazy. Hopefully this is of use to someone, pull requests welcome ;)
+Only some functions have been implemented, and I got a bit lazy :cold_sweat:. Hopefully this is of use to someone, pull requests welcome :wink: :heart:
 
 # Getting Started
 
@@ -56,5 +56,5 @@ See below for a list of available commands.
 
 # To Do
 
-* Remove some hacky shortcuts... sorry..
+* Remove some hacky shortcuts... sorry.. :sweat: :pensive:
 * Add support for more litmos functions

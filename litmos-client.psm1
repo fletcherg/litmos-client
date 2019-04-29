@@ -308,7 +308,13 @@ function Invoke-LitmosRequest {
         return
     }
 	if ($method -eq "GET") {
-		return ([xml]$result.content).ChildNodes.SelectNodes("*")
+		## this is a bit shit, need to rewrite...
+		if ($arguments.UserId) {
+			return ([xml]$result.content).ChildNodes
+		} else {
+			return ([xml]$result.content).ChildNodes.SelectNodes("*")
+		}
+		
 	} else {
 		return $result
 	}
@@ -406,9 +412,17 @@ function Get-LitmosUser {
     )
 
 	if ($details) {
-		$res = Invoke-LitmosAllResult -endpoint "Users/Details" -Arguments $PsBoundParameters
+		
+		$res = Invoke-LitmosAllResult -endpoint "Users/$($userId)/Details" -Arguments $PsBoundParameters
+		
+	
 	} else {
-		$res = Invoke-LitmosAllResult -endpoint "Users" -Arguments $PsBoundParameters
+	
+		if ($userid) {
+			$res = Invoke-LitmosAllResult -endpoint "Users/$($userId)" -Arguments $PsBoundParameters
+		} else {
+			$res = Invoke-LitmosAllResult -endpoint "Users" -Arguments $PsBoundParameters
+		}
 	}
 	
 	#return $res | % { ConvertFrom-XML $_ }
@@ -640,6 +654,260 @@ function Remove-LitmosUser {
 
 
 #region [Teams]-------
+
+function Get-LitmosTeam {
+    <#
+        .SYNOPSIS
+        This function will get teams based on conditions.
+
+        .PARAMETER name
+        If specified, only return team with this name
+
+		.PARAMETER parent
+        ID of parent team to retrieve teams for
+		
+        .EXAMPLE
+		Get-LitmosTeam -name "All Users"
+        Will return all teams under "All Users"
+
+        .NOTES
+        Author: fletcherg
+        Date: 30/04/2019
+
+        .LINK
+        https://github.com/fletcherg/litmos-client
+    #>
+    [CmdletBinding()]
+    param(
+		[String]$name,
+		[String]$parentteam
+		)
+		
+	if ($parentteam) {
+		$endpoint = "teams/$($parentteam)/teams"
+	} else {
+		$endpoint = "teams"
+	}
+	
+	$res = Invoke-LitmosAllResult -endpoint $endpoint -Arguments $PsBoundParameters
+	
+	if ($name) {
+		return $res | ? {$_.name -eq $name}
+	} else {
+		return $res
+	}
+	
+}
+
+
+function Create-LitmosTeam {
+    <#
+        .SYNOPSIS
+        This function will Create a litmos team
+
+        .PARAMETER name
+        Name of the team to create
+		
+		.PARAMETER description
+        Description of the team
+		
+		.PARAMETER parentteam
+        ID of the parent team
+
+        .NOTES
+        Author: fletcherg
+        Date: 28/04/2019
+
+        .LINK
+        https://github.com/fletcherg/litmos-client
+    #>
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory=$true)]
+		[string]$name,
+		[string]$description,
+		[string]$parentteam
+    )
+
+
+$body = @"
+<Team xmlns:i="http://www.w3.org/2001/XMLSchema-instance">
+	<Id></Id>
+    <Name>$($name)</Name>
+    <Description>$($description)</Description>
+</Team>
+"@.replace("&","&amp;")	
+
+	if ($parentteam) {
+		$endpoint = "teams/$($parentteam)/teams"
+	} else {
+		$endpoint = "teams"
+	}
+	
+	$res = Invoke-LitmosRequest -endpoint $endpoint -method "POST" -body $body
+	
+	if ($res.StatusCode -eq 201) {
+		Write-Verbose "Team created OK"
+		return $true
+	} else {
+		Write-Error "Error in creating team"
+		return $false
+	}	
+}
+
+
+function Get-LitmosTeamMember {
+    <#
+        .SYNOPSIS
+        This function will get team members based on conditions.
+
+        .PARAMETER team
+        ID of the team
+
+        .EXAMPLE
+		Get-LitmosTeamMember -team f4kdjzprT_4
+        Will return all users that are a member of this team
+
+        .NOTES
+        Author: fletcherg
+        Date: 30/04/2019
+
+        .LINK
+        https://github.com/fletcherg/litmos-client
+    #>
+    [CmdletBinding()]
+    param(
+		[Parameter(Mandatory=$true)]
+		[String]$team
+		)
+		
+	$endpoint = "teams/$($team)/users"
+	
+	$res = Invoke-LitmosAllResult -endpoint $endpoint -Arguments $PsBoundParameters
+	
+	return $res
+}
+
+
+function Delete-LitmosTeam {
+    <#
+        .SYNOPSIS
+        This function will get delete a litmos team
+
+        .PARAMETER team
+        ID of the team
+
+        .EXAMPLE
+		Delete-LitmosTeamMember -team f4kdjzprT_4
+        Will delete this team
+
+        .NOTES
+        Author: fletcherg
+        Date: 30/04/2019
+
+        .LINK
+        https://github.com/fletcherg/litmos-client
+    #>
+    [CmdletBinding()]
+    param(
+		[Parameter(Mandatory=$true)]
+		[String]$team
+		)
+		
+	$endpoint = "teams/$($team)"
+	
+	$res = Invoke-LitmosRequest -endpoint $endpoint -Method "DELETE"
+	
+	if ($res.StatusCode -eq 200) {
+		Write-Verbose "Team deleted OK"
+		return $true
+	} else {
+		Write-Error "Error in deleting team"
+		return $false
+	}	
+	
+}
+
+
+function Add-LitmosTeamMember{
+    <#
+        .SYNOPSIS
+        This function will add a user to a team
+
+        .PARAMETER team
+        ID of the team
+		
+		.PARAMETER userid
+        ID of the user
+		
+		.PARAMETER username
+        username of the user
+
+		.PARAMETER firstname
+        first name of the user
+		
+		.PARAMETER lastname
+        last name of the user
+		
+        .EXAMPLE
+		Delete-LitmosTeamMember -team f4kdjzprT_4
+        Will delete this team
+
+        .NOTES
+        Author: fletcherg
+        Date: 30/04/2019
+
+        .LINK
+        https://github.com/fletcherg/litmos-client
+    #>
+    [CmdletBinding()]
+	Param(
+	[Parameter(Mandatory=$true)]
+	[String]$teamId,
+	[Parameter(Mandatory=$true)]
+	[String]$UserId,
+	[String]$UserName,
+	[String]$FirstName,
+	[String]$LastName
+	)
+
+	if (!$username -or !$firstname -or !$lastname) {
+		Write-Verbose "Not enough details listed, retrieving user"
+		$r = Get-LitmosUser -UserId $userId
+		if ($r) {
+			$username = $r.username
+			$firstname = $r.firstname
+			$lastname = $r.lastname
+		} else {
+			Write-Error "Can't find user"
+			return
+		}
+	}
+	
+$body = @"
+<Users xmlns:i="http://www.w3.org/2001/XMLSchema-instance">
+<User>
+	<Id>$($userId)</Id>
+	<UserName>$($UserName)</UserName>  
+   <FirstName>$($FirstName)</FirstName>  
+   <LastName>$($LastName)</LastName>  
+</User>
+	</Users>
+"@.replace("&","&amp;")	
+
+	$endpoint = "teams/$($teamId)/users"
+	
+	
+	$res = Invoke-LitmosRequest -endpoint $endpoint -method "POST" -body $body
+	
+	if ($res.StatusCode -eq 201) {
+		Write-Verbose "user added OK"
+		return $true
+	} else {
+		Write-Error "Error in adding user to team"
+		return $false
+	}	
+}
 
 
 #endregion [Teams]-------

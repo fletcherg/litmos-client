@@ -6,8 +6,6 @@ https://support.litmos.com/hc/en-us/articles/227734667-Overview-Developer-API
 
 Only some functions have been implemented, and I got a bit lazy. Hopefully this is of use to someone, pull requests welcome ;)
 
-This has been largely based on the [ConnectWise-Manage-Powershell](https://github.com/LabtechConsulting/ConnectWise-Manage-Powershell) by [ChrisTaylorRocks](https://github.com/ChrisTaylorRocks)
-
 # Getting Started
 
 You will need a Litmos account setup, and an API key

@@ -438,23 +438,23 @@ function Update-LitmosUser {
     [CmdletBinding()]
     param(
         $properties,
+		$manager,
 		[Parameter(Mandatory=$true)]
         [string]$userid
     )
 	
-	$endpoint = "users/$($userId)"
-
-	$reqFields = "Id","UserName","FirstName","LastName","FullName", `
-			"Email","Active","PhoneWork","PhoneMobile","SkipFirstLogin", `
-			"Street1","Street2","City","State","PostalCode","Country", `
-			"CompanyName","JobTitle","CustomField1","CustomField10","Website"
-	
-	foreach ($reqField in $reqFields) {
-		if ($properties.Keys -notcontains $reqField) {
-			Write-Error "Did not include $($reqField) in update params"
-			return
+	if ($properties) {
+		$reqFields = "Id","UserName","FirstName","LastName","FullName", `
+				"Email","Active","PhoneWork","PhoneMobile","SkipFirstLogin", `
+				"Street1","Street2","City","State","PostalCode","Country", `
+				"CompanyName","JobTitle","CustomField1","CustomField10","Website"
+		
+		foreach ($reqField in $reqFields) {
+			if ($properties.Keys -notcontains $reqField) {
+				Write-Error "Did not include $($reqField) in update params"
+				return
+			}
 		}
-	}
 $body = @"
 <User xmlns:i="http://www.w3.org/2001/XMLSchema-instance">
 	<Id>$($properties.Id)</Id>
@@ -480,6 +480,35 @@ $body = @"
     <Website>$($properties.Website)</Website>
 </User>
 "@.replace("&","&amp;")
+
+	} elseif ($manager) {
+		$reqFields = "Id","UserName","FirstName","LastName","FullName", `
+				"Email","SkipFirstLogin", "ManagerId"
+		
+		foreach ($reqField in $reqFields) {
+			if ($manager.Keys -notcontains $reqField) {
+				Write-Error "Did not include $($reqField) in update params"
+				return
+			}
+		}
+
+$body = @"
+<User xmlns:i="http://www.w3.org/2001/XMLSchema-instance">
+	<Id>$($manager.Id)</Id>
+    <UserName>$($manager.UserName)</UserName>
+    <FirstName>$($manager.FirstName)</FirstName>
+    <LastName>$($manager.LastName)</LastName>
+    <FullName>$($manager.FullName)</FullName>
+    <Email>$($manager.Email)</Email>
+    <SkipFirstLogin>$($manager.SkipFirstLogin)</SkipFirstLogin>
+    <ManagerId>$($manager.ManagerId)</ManagerId>
+</User>
+"@.replace("&","&amp;")
+	}
+	
+	$endpoint = "users/$($userId)"
+
+
 
 	$res = Invoke-LitmosRequest -endpoint $endpoint -method "PUT" -body $body
 	if ($res.StatusCode -eq 200) {
@@ -609,3 +638,8 @@ function Remove-LitmosUser {
 }
 #endregion [Users]-------
 
+
+#region [Teams]-------
+
+
+#endregion [Teams]-------

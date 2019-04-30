@@ -910,4 +910,44 @@ $body = @"
 }
 
 
+function Remove-LitmosTeamMember{
+    <#
+        .SYNOPSIS
+        This function will remove a user from a team
+
+        .PARAMETER team
+        ID of the team
+		
+		.PARAMETER userid
+        ID of the user
+		
+        .EXAMPLE
+		Remove-LitmosTeamMember -team f4kdjzprT_4 -user p5nz03k_3k4i
+        Will remove this user from this team
+
+        .NOTES
+        Author: fletcherg
+        Date: 30/04/2019
+
+        .LINK
+        https://github.com/fletcherg/litmos-client
+    #>
+    [CmdletBinding()]
+	Param(
+	[Parameter(Mandatory=$true)]
+	[String]$teamId,
+	[Parameter(Mandatory=$true)]
+	[String]$UserId,
+	)
+
+	$endpoint = "teams/$($teamId)/users/$($userId)"
+	
+	$res = Invoke-LitmosRequest -endpoint $endpoint -Method "DELETE"
+		
+		
+	}
+
+}
+
+
 #endregion [Teams]-------

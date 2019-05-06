@@ -67,7 +67,6 @@ function Connect-Litmos {
         Connect-Litmos @Connection
             
         .NOTES
-        Author: fletcherg
         Date: 27/04/2019
         .LINK
         https://support.litmos.com/hc/en-us/articles/227734667-Overview-Developer-API
@@ -84,8 +83,9 @@ function Connect-Litmos {
     )
 
 	
+	# this is stupid
 	if ($global:LitmosConnection -and !$force) {
-		Write-Verbose "Using cached server information"
+		Write-Verbose "Connect-Litmos: Using cached server information for tenant $($global:LitmosConnection:tenantName)"
 		return
 	}
 	
@@ -130,7 +130,6 @@ function Disconnect-Litmos {
         .EXAMPLE
         Disconnect-Litmos 
         .NOTES
-        Author: fletcherg
         Date: 27/04/2019
 
         .LINK
@@ -142,7 +141,7 @@ function Disconnect-Litmos {
     if($LitmosConnection -or $global:LitmosConnection) {
         Write-Error "There was an error clearing connection information.`n$($Error[0])"
     } else {
-        Write-Verbose '$LitmosConnection, variable removed.'
+        Write-Verbose 'Disconnect-Litmos $LitmosConnection, variable removed.'
     }
 }
 
@@ -164,7 +163,6 @@ function Invoke-LitmosRequest {
         The maximum number of retry attempts
 
         .NOTES
-        Author: fletcherg
         Date: 27/04/2019
 
         .LINK
@@ -212,9 +210,6 @@ function Invoke-LitmosRequest {
 		} until (((Get-Date) - $global:LitmosRateTime).TotalSeconds -gt $rateLimitSeconds)
 	}
 	
-	
-	
-	### Build web request
 	if ($method -eq "GET") {
 		
 			$additionalOptions = ""
@@ -307,12 +302,13 @@ function Invoke-LitmosRequest {
         Write-Error ($ErrorMessage | out-string)
         return
     }
+	## this is a bit shit lol, need to rewrite...
 	if ($method -eq "GET") {
-		## this is a bit shit, need to rewrite...
+		
 		if ($arguments.UserId) {
-			return ([xml]$result.content).ChildNodes
+			return ([xml]$result.content.replace(">System.Xml.XmlElement<","><")).ChildNodes
 		} else {
-			return ([xml]$result.content).ChildNodes.SelectNodes("*")
+			return ([xml]$result.content.replace(">System.Xml.XmlElement<","><")).ChildNodes.SelectNodes("*")
 		}
 		
 	} else {
@@ -335,7 +331,6 @@ function Invoke-LitmosAllResult {
         Invoke-LitmosAllResult -endpoint "users"
             
         .NOTES
-        Author: fletcherg
         Date: 28/04/2019
 
         .LINK
@@ -395,7 +390,6 @@ function Get-LitmosUser {
         Will return all users with details
 		
         .NOTES
-        Author: fletcherg
         Date: 28/04/2019
 
         .LINK
@@ -430,7 +424,6 @@ function Get-LitmosUser {
 	 
 }
 
-
 function Update-LitmosUser {
     <#
         .SYNOPSIS
@@ -439,11 +432,22 @@ function Update-LitmosUser {
         .PARAMETER userid
         ID of the user to update
 
-        .PARAMETER propeties
-        Hashtable of properties to update. Must include required parameters per API doc.
+        .PARAMETER username
+        UserName of the user to update
+		
+		.PARAMETER firstname
+		FirstName of the user to upate
+		
+		.PARAMETER lastname
+		LastName of the user to update
+		
+		.PARAMETER fullname
+		FullName of the user to update
+		
+		.PARAMETER email
+		Email of the user to update.
 		
         .NOTES
-        Author: fletcherg
         Date: 28/04/2019
 
         .LINK
@@ -454,89 +458,102 @@ function Update-LitmosUser {
         $properties,
 		$manager,
 		[Parameter(Mandatory=$true)]
-        [string]$userid
-    )
+        [string]$userid,
+		[Parameter(Mandatory=$true)]
+        [string]$UserName,
+		[Parameter(Mandatory=$true)]
+        [string]$FirstName,
+		[Parameter(Mandatory=$true)]
+        [string]$LastName,
+		[Parameter(Mandatory=$true)]
+        [string]$FullName,
+		[Parameter(Mandatory=$true)]
+        [string]$Email,
+		[string]$AccessLevel,
+		[string]$DisableMessages,
+		[string]$Active,
+		[string]$Skype,
+		[string]$PhoneWork,
+		[string]$PhoneMobile,
+		[string]$LastLogin,
+		[string]$LoginKey,
+		[string]$Password,
+		[string]$SkipFirstLogin,
+		[string]$TimeZone,
+		[string]$Street1,
+		[string]$Street2,
+		[string]$City,
+		[string]$State,
+		[string]$PostalCode,
+		[string]$Country,
+		[string]$CompanyName,
+		[string]$JobTitle,
+		[string]$CustomField1,
+		[string]$CustomField10,
+		[string]$Culture,
+		[string]$Brand,
+		[string]$ManagerId,
+		[string]$EnableTextNotifications,
+		[string]$Website,
+		[string]$Twitter,
+		[string]$ExpirationDate
+		)
 	
-	if ($properties) {
-		$reqFields = "Id","UserName","FirstName","LastName","FullName", `
-				"Email","Active","PhoneWork","PhoneMobile","SkipFirstLogin", `
-				"Street1","Street2","City","State","PostalCode","Country", `
-				"CompanyName","JobTitle","CustomField1","CustomField10","Website"
-		
-		foreach ($reqField in $reqFields) {
-			if ($properties.Keys -notcontains $reqField) {
-				Write-Error "Did not include $($reqField) in update params"
-				return
-			}
-		}
-$body = @"
-<User xmlns:i="http://www.w3.org/2001/XMLSchema-instance">
-	<Id>$($properties.Id)</Id>
-    <UserName>$($properties.UserName)</UserName>
-    <FirstName>$($properties.FirstName)</FirstName>
-    <LastName>$($properties.LastName)</LastName>
-    <FullName>$($properties.FullName)</FullName>
-    <Email>$($properties.Email)</Email>
-    <Active>$($properties.Active)</Active>
-	<PhoneWork>$($properties.PhoneWork)</PhoneWork>
-	<PhoneMobile>$($properties.PhoneMobile)</PhoneMobile>
-    <SkipFirstLogin>$($properties.SkipFirstLogin)</SkipFirstLogin>
-    <Street1>$($properties.Street1)</Street1>
-    <Street2>$($properties.Street2)</Street2>
-    <City>$($properties.City)</City>
-    <State>$($properties.State)</State>
-    <PostalCode>$($properties.PostalCode)</PostalCode>
-    <Country>$($properties.Country)</Country>
-    <CompanyName>$($properties.CompanyName)</CompanyName>
-    <JobTitle>$($properties.JobTitle)</JobTitle>
-    <CustomField1>$($properties.CustomField1)</CustomField1>
-    <CustomField10>$($properties.CustomField10)</CustomField10>
-    <Website>$($properties.Website)</Website>
-</User>
-"@.replace("&","&amp;")
-
-	} elseif ($manager) {
-		$reqFields = "Id","UserName","FirstName","LastName","FullName", `
-				"Email","SkipFirstLogin", "ManagerId"
-		
-		foreach ($reqField in $reqFields) {
-			if ($manager.Keys -notcontains $reqField) {
-				Write-Error "Did not include $($reqField) in update params"
-				return
-			}
-		}
-
-$body = @"
-<User xmlns:i="http://www.w3.org/2001/XMLSchema-instance">
-	<Id>$($manager.Id)</Id>
-    <UserName>$($manager.UserName)</UserName>
-    <FirstName>$($manager.FirstName)</FirstName>
-    <LastName>$($manager.LastName)</LastName>
-    <FullName>$($manager.FullName)</FullName>
-    <Email>$($manager.Email)</Email>
-    <SkipFirstLogin>$($manager.SkipFirstLogin)</SkipFirstLogin>
-    <ManagerId>$($manager.ManagerId)</ManagerId>
-</User>
-"@.replace("&","&amp;")
-	}
+	$body = "<User xmlns:i=""http://www.w3.org/2001/XMLSchema-instance"">"
+	$body += "<Id>$($UserId)</Id>"
+    $body += "<UserName>$($UserName)</UserName>"
+    $body += "<FirstName>$($FirstName)</FirstName>"
+    $body += "<LastName>$($LastName)</LastName>"
+    $body += "<FullName>$($FullName)</FullName>"
+    $body += "<Email>$($Email)</Email>"
+	if ($AccessLevel) { $body += "<AccessLevel>$($AccessLevel)</AccessLevel>" }
+	if ($DisableMessages) { $body += "<DisableMessages>$($DisableMessages)</DisableMessages>" }
+	if ($Active) { $body += "<Active>$($Active)</Active>" }
+	if ($Skype) { $body += "<Skype>$($Skype)</Skype>" }
+	if ($PhoneWork) { $body += "<PhoneWork>$($PhoneWork)</PhoneWork>" }
+	if ($PhoneMobile) { $body += "<PhoneMobile>$($PhoneMobile)</PhoneMobile>" }
+	if ($LastLogin) { $body += "<LastLogin>$($LastLogin)</LastLogin>" }
+	if ($LoginKey) { $body += "<LoginKey>$($LoginKey)</LoginKey>" }
+	if ($Password) { $body += "<Password>$($Password)</Password>" }
+	if ($SkipFirstLogin) { $body += "<SkipFirstLogin>$($SkipFirstLogin)</SkipFirstLogin>" }
+	if ($TimeZone) { $body += "<TimeZone>$($TimeZone)</TimeZone>" }
+	if ($Street1) { $body += "<Street1>$($Street1)</Street1>" }
+	if ($Street2) { $body += "<Street2>$($Street2)</Street2>" }
+	if ($City) { $body += "<City>$($City)</City>" }
+	if ($State) { $body += "<State>$($State)</State>" }
+	if ($PostalCode) { $body += "<PostalCode>$($PostalCode)</PostalCode>" }
+	if ($Country) { $body += "<Country>$($Country)</Country>" }
+	if ($CompanyName) { $body += "<CompanyName>$($CompanyName)</CompanyName>" }
+	if ($JobTitle) { $body += "<JobTitle>$($JobTitle)</JobTitle>" }
+	if ($CustomField1) { $body += "<CustomField1>$($CustomField1)</CustomField1>" }
+	if ($CustomField10) { $body += "<CustomField10>$($CustomField10)</CustomField10>" }
+	if ($Culture) { $body += "<Culture>$($Culture)</Culture>" }
+	if ($Brand) { $body += "<Brand>$($Brand)</Brand>" }
+	if ($ManagerId) { $body += "<ManagerId>$($ManagerId)</ManagerId>" }
+	if ($EnableTextNotifications) { $body += "<EnableTextNotifications>$($EnableTextNotifications)</EnableTextNotifications>" }
+	if ($Website) { $body += "<Website>$($Website)</Website>" }
+	if ($Twitter) { $body += "<Twitter>$($Twitter)</Twitter>" }
+	if ($ExpirationDate) { $body += "<ExpirationDate>$($ExpirationDate)</ExpirationDate>" }
+	$body += "</User>"
 	
+		
 	$endpoint = "users/$($userId)"
+	
+	
+	write-debug $body
+	write-debug $endpoint
 
-
-
-	$res = Invoke-LitmosRequest -endpoint $endpoint -method "PUT" -body $body
+	$res = Invoke-LitmosRequest -endpoint $endpoint -method "PUT" -body $body.replace("&","&amp;")
 	if ($res.StatusCode -eq 200) {
 		Write-Verbose "Updated OK"
-		return $true
 	} else {
 		Write-Error "Error in updating user $($userId)"
-		return $false
 	}
 	
 }
 
 
-function Create-LitmosUser {
+function New-LitmosUser {
     <#
         .SYNOPSIS
         This function will Create a litmos user based on ID
@@ -548,7 +565,6 @@ function Create-LitmosUser {
         Hashtable of properties to update. Must include required parameters per API doc.
 		
         .NOTES
-        Author: fletcherg
         Date: 28/04/2019
 
         .LINK
@@ -608,6 +624,8 @@ $body = @"
 </User>
 "@.replace("&","&amp;")
 
+	Write-Debug $body
+	
 	$res = Invoke-LitmosRequest -endpoint $endpoint -method "POST" -body $body
 	if ($res.StatusCode -eq 200) {
 		Write-Verbose "Updated OK"
@@ -627,7 +645,6 @@ function Remove-LitmosUser {
         ID of the user to remove
 		
         .NOTES
-        Author: fletcherg
         Date: 28/04/2019
 
         .LINK
@@ -671,7 +688,6 @@ function Get-LitmosTeam {
         Will return all teams under "All Users"
 
         .NOTES
-        Author: fletcherg
         Date: 30/04/2019
 
         .LINK
@@ -700,7 +716,7 @@ function Get-LitmosTeam {
 }
 
 
-function Create-LitmosTeam {
+function New-LitmosTeam {
     <#
         .SYNOPSIS
         This function will Create a litmos team
@@ -715,7 +731,6 @@ function Create-LitmosTeam {
         ID of the parent team
 
         .NOTES
-        Author: fletcherg
         Date: 28/04/2019
 
         .LINK
@@ -740,10 +755,13 @@ $body = @"
 
 	if ($parentteam) {
 		$endpoint = "teams/$($parentteam)/teams"
+		Write-Verbose "Creating team $($name) under $($parentteam)..."
 	} else {
 		$endpoint = "teams"
+		Write-Verbose "Creating team $($name)..."
 	}
 	
+	Write-Verbose "Create team endpoint $($endpoint)"
 	$res = Invoke-LitmosRequest -endpoint $endpoint -method "POST" -body $body
 	
 	if ($res.StatusCode -eq 201) {
@@ -769,7 +787,6 @@ function Get-LitmosTeamMember {
         Will return all users that are a member of this team
 
         .NOTES
-        Author: fletcherg
         Date: 30/04/2019
 
         .LINK
@@ -789,7 +806,7 @@ function Get-LitmosTeamMember {
 }
 
 
-function Delete-LitmosTeam {
+function Remove-LitmosTeam {
     <#
         .SYNOPSIS
         This function will get delete a litmos team
@@ -798,11 +815,10 @@ function Delete-LitmosTeam {
         ID of the team
 
         .EXAMPLE
-		Delete-LitmosTeamMember -team f4kdjzprT_4
+		Remove-LitmosTeamMember -team f4kdjzprT_4
         Will delete this team
 
         .NOTES
-        Author: fletcherg
         Date: 30/04/2019
 
         .LINK
@@ -850,11 +866,10 @@ function Add-LitmosTeamMember{
         last name of the user
 		
         .EXAMPLE
-		Delete-LitmosTeamMember -team f4kdjzprT_4
+		Add-LitmosTeamMember -team f4kdjzprT_4
         Will delete this team
 
         .NOTES
-        Author: fletcherg
         Date: 30/04/2019
 
         .LINK
@@ -864,14 +879,20 @@ function Add-LitmosTeamMember{
 	Param(
 	[Parameter(Mandatory=$true)]
 	[String]$teamId,
-	[Parameter(Mandatory=$true)]
 	[String]$UserId,
 	[String]$UserName,
 	[String]$FirstName,
-	[String]$LastName
+	[String]$LastName,
+	$UserList
 	)
 
-	if (!$username -or !$firstname -or !$lastname) {
+	if(!$UserList -AND !$UserId) {
+		Write-Error "Must specify at least a User ID or UserList object"
+		return
+	}
+	
+	if ($UserId) {
+		if (!$username -or !$firstname -or !$lastname) {
 		Write-Verbose "Not enough details listed, retrieving user"
 		$r = Get-LitmosUser -UserId $userId
 		if ($r) {
@@ -882,8 +903,9 @@ function Add-LitmosTeamMember{
 			Write-Error "Can't find user"
 			return
 		}
-	}
-	
+		}
+		
+
 $body = @"
 <Users xmlns:i="http://www.w3.org/2001/XMLSchema-instance">
 <User>
@@ -893,11 +915,37 @@ $body = @"
    <LastName>$($LastName)</LastName>  
 </User>
 	</Users>
+"@.replace("&","&amp;")			
+	
+	} elseif ($UserList) {
+	
+	Write-Verbose "Adding $($UserList.count) users to team $($teamId)"
+
+
+$body = @"
+<Users xmlns:i="http://www.w3.org/2001/XMLSchema-instance">
+"@
+foreach ($u in $UserList) {
+Write-Verbose "including $($u.id) $($u.username) $($u.firstname) $($u.lastname)"
+$body += @"
+<User>
+	<Id>$($u.Id)</Id>
+	<UserName>$($u.username)</UserName>  
+   <FirstName>$($u.firstname)</FirstName>  
+   <LastName>$($u.lastname)</LastName>  
+</User>
 "@.replace("&","&amp;")	
+}
+$body += @"
+</Users>
+"@
+	}
+
+	
 
 	$endpoint = "teams/$($teamId)/users"
-	
-	
+	Write-Debug $endpoint
+	Write-Debug $body
 	$res = Invoke-LitmosRequest -endpoint $endpoint -method "POST" -body $body
 	
 	if ($res.StatusCode -eq 201) {
@@ -915,7 +963,7 @@ function Remove-LitmosTeamMember{
         .SYNOPSIS
         This function will remove a user from a team
 
-        .PARAMETER team
+        .PARAMETER teamid
         ID of the team
 		
 		.PARAMETER userid
@@ -926,7 +974,6 @@ function Remove-LitmosTeamMember{
         Will remove this user from this team
 
         .NOTES
-        Author: fletcherg
         Date: 30/04/2019
 
         .LINK
@@ -937,16 +984,11 @@ function Remove-LitmosTeamMember{
 	[Parameter(Mandatory=$true)]
 	[String]$teamId,
 	[Parameter(Mandatory=$true)]
-	[String]$UserId,
+	[String]$UserId
 	)
 
 	$endpoint = "teams/$($teamId)/users/$($userId)"
-	
 	$res = Invoke-LitmosRequest -endpoint $endpoint -Method "DELETE"
-		
-		
-	}
-
 }
 
 

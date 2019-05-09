@@ -1,44 +1,4 @@
 #region [Helpers]-------
-function ConvertFrom-XmlPart {
-    param(
-        $xml
-    )
-	# https://consciouscipher.wordpress.com/2015/06/05/converting-xml-to-powershell-psobject/ 
-    $hash = @{}
-    $xml | Get-Member -MemberType Property | `
-        % {
-            $name = $_.Name
-            if ($_.Definition.StartsWith("string ")) {
-                $hash.($Name) = $xml.$($Name)
-            } elseif ($_.Definition.StartsWith("System.Object[] ")) {
-                $obj = $xml.$($Name)
-                $hash.($Name) = $($obj | %{ $_.tag }) -join "; "
-            } elseif ($_.Definition.StartsWith("System.Xml")) {
-                $obj = $xml.$($Name)
-                $hash.($Name) = @{}
-                if ($obj.HasAttributes) {
-                    $attrName = $obj.Attributes | Select-Object -First 1 | % { $_.Name }
-                    if ($attrName -eq "tag") {
-                        $hash.($Name) = $($obj | % { $_.tag }) -join "; "
-                    } else {
-                        $hash.($Name) = ConvertFrom-XmlPart $obj
-                    }
-                }
-                if ($obj.HasChildNodes) {
-                    $obj.ChildNodes | % { $hash.($Name).($_.Name) = ConvertFrom-XmlPart $($obj.$($_.Name)) }
-                }
-            }
-        }
-    return $hash
-}
- 
-function ConvertFrom-Xml {
-    param(
-        $xml
-    )
-    $hash = ConvertFrom-XmlPart($xml)
-    return New-Object PSObject -Property $hash
-}
 
 function Connect-Litmos {
     <#

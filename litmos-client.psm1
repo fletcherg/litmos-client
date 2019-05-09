@@ -467,7 +467,6 @@ function Update-LitmosUser {
         [string]$LastName,
 		[Parameter(Mandatory=$true)]
         [string]$FullName,
-		[Parameter(Mandatory=$true)]
         [string]$Email,
 		[string]$AccessLevel,
 		[string]$DisableMessages,
@@ -505,7 +504,7 @@ function Update-LitmosUser {
     $body += "<FirstName>$($FirstName)</FirstName>"
     $body += "<LastName>$($LastName)</LastName>"
     $body += "<FullName>$($FullName)</FullName>"
-    $body += "<Email>$($Email)</Email>"
+    if ($email -OR $email -eq "") { $body += "<Email>$($Email)</Email>" }
 	if ($AccessLevel) { $body += "<AccessLevel>$($AccessLevel)</AccessLevel>" }
 	if ($DisableMessages) { $body += "<DisableMessages>$($DisableMessages)</DisableMessages>" }
 	if ($Active) { $body += "<Active>$($Active)</Active>" }
@@ -990,6 +989,5 @@ function Remove-LitmosTeamMember{
 	$endpoint = "teams/$($teamId)/users/$($userId)"
 	$res = Invoke-LitmosRequest -endpoint $endpoint -Method "DELETE"
 }
-
 
 #endregion [Teams]-------

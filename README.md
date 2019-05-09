@@ -40,18 +40,25 @@ See below for a list of available commands.
 
 [Connect-Litmos](Litmos/Connect-Litmos.md)
 
-[Create-LitmosTeam](Litmos/Create-LitmosTeam.md)
-
-[Create-LitmosUser](Litmos/Create-LitmosUser.md)
-
 [Get-LitmosTeam](Litmos/Get-LitmosTeam.md)
 
+[Get-LitmosTeamMember](Litmos/Get-LitmosTeamMember.md)
+
 [Get-LitmosUser](Litmos/Get-LitmosUser.md)
+
+[New-LitmosTeam](Litmos/New-LitmosTeam.md)
+
+[New-LitmosUser](Litmos/New-LitmosUser.md)
+
+[Remove-LitmosUser](Litmos/Remove-LitmosUser.md)
+
+[Remove-LitmosTeam](Litmos/Remove-LitmosTeam.md)
+
+[Remove-LitmosTeamMember](Litmos/Remove-LitmosTeamMember.md)
 
 [Update-LitmosUser](Litmos/Update-LitmosUser.md)
 
 [Disconnect-Litmos](Litmos/Disonnect-Litmos.md)
-
 
 
 # To Do

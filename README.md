@@ -1,10 +1,10 @@
 # litmos-client
 
-Basic PowerShell client implementation for Litmos LMS API.
+Very basic PowerShell client implementation for Litmos LMS API.
 
 https://support.litmos.com/hc/en-us/articles/227734667-Overview-Developer-API
 
-Only some functions have been implemented, and I got a bit lazy :cold_sweat:. Hopefully this is of use to someone :wink: :heart:
+Only some functions have been implemented, and I got a bit lazy :cold_sweat:. But hopefully this is of use to someone to build on :wink: :heart:
 
 # Getting Started
 

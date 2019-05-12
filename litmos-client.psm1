@@ -428,16 +428,24 @@ function Update-LitmosUser {
 		[Parameter(Mandatory=$true)]
         [string]$FullName,
         [string]$Email,
-		[string]$AccessLevel,
+		[Parameter(Mandatory=$true)]
+        [string]$AccessLevel,
+		[Parameter(Mandatory=$true)]
 		[string]$DisableMessages,
+		[Parameter(Mandatory=$true)]
 		[string]$Active,
 		[string]$Skype,
 		[string]$PhoneWork,
 		[string]$PhoneMobile,
 		[string]$LastLogin,
+		[Parameter(Mandatory=$true)]
 		[string]$LoginKey,
+		[Parameter(Mandatory=$true)]
+		[string]$isCustomuserName,
 		[string]$Password,
+		[Parameter(Mandatory=$true)]
 		[string]$SkipFirstLogin,
+		[Parameter(Mandatory=$true)]
 		[string]$TimeZone,
 		[string]$Street1,
 		[string]$Street2,
@@ -471,8 +479,9 @@ function Update-LitmosUser {
 	if ($Skype) { $body += "<Skype>$($Skype)</Skype>" }
 	if ($PhoneWork) { $body += "<PhoneWork>$($PhoneWork)</PhoneWork>" }
 	if ($PhoneMobile) { $body += "<PhoneMobile>$($PhoneMobile)</PhoneMobile>" }
-	if ($LastLogin) { $body += "<LastLogin>$($LastLogin)</LastLogin>" }
+	if ($LastLogin -OR $LastLogin -eq "") { $body += "<LastLogin>$($LastLogin)</LastLogin>" }
 	if ($LoginKey) { $body += "<LoginKey>$($LoginKey)</LoginKey>" }
+	if ($isCustomUsername) { $body += "<IsCustomUsername>$($isCustomUsername)</IsCustomUsername>" }
 	if ($Password) { $body += "<Password>$($Password)</Password>" }
 	if ($SkipFirstLogin) { $body += "<SkipFirstLogin>$($SkipFirstLogin)</SkipFirstLogin>" }
 	if ($TimeZone) { $body += "<TimeZone>$($TimeZone)</TimeZone>" }

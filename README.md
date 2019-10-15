@@ -12,10 +12,7 @@ You will need a Litmos account setup, and an API key
 
 https://support.litmos.com/hc/en-us/articles/227734847-Retrieving-Your-API-Key
 
-
-The following example script will use the same information you use to log into Manage.
-
-The following example will let you login
+The following example will let you login:
 
 ```
 

@@ -190,28 +190,32 @@ function Invoke-LitmosRequest {
 			}
 			
 			$WebRequestArguments = @{
-            URI = "https://$($global:litmosconnection.server)/$($endpoint)?apikey=$($global:litmosconnection.apiKey)&source=$($global:litmosconnection.tenantName)$($additionalOptions)"
-            Method = "GET"
+            URI = "https://$($global:litmosconnection.server)/$($endpoint)?source=$($global:litmosconnection.tenantName)$($additionalOptions)"
+            Headers = @{ APIKey = $global:litmosconnection.apiKey }
+	    Method = "GET"
 			}
         
 	} elseif ($method -eq "PUT") {
 		$WebRequestArguments = @{
-            URI = "https://$($global:litmosconnection.server)/$($endpoint)?apikey=$($global:litmosconnection.apiKey)&source=$($global:litmosconnection.tenantName)"
-            Method = "PUT"
+            URI = "https://$($global:litmosconnection.server)/$($endpoint)?source=$($global:litmosconnection.tenantName)"
+            Headers = @{ APIKey = $global:litmosconnection.apiKey }
+	    Method = "PUT"
             Body = $Body
 			ContentType = "application/xml"
         }
 	} elseif ($method -eq "POST") {
 		$WebRequestArguments = @{
-            URI = "https://$($global:litmosconnection.server)/$($endpoint)?apikey=$($global:litmosconnection.apiKey)&source=$($global:litmosconnection.tenantName)"
-            Method = "POST"
+            URI = "https://$($global:litmosconnection.server)/$($endpoint)?source=$($global:litmosconnection.tenantName)"
+            Headers = @{ APIKey = $global:litmosconnection.apiKey }
+	    Method = "POST"
             Body = $Body
 			ContentType = "application/xml"
         }
 	} elseif ($method -eq "DELETE") {
 		$WebRequestArguments = @{
-            URI = "https://$($global:litmosconnection.server)/$($endpoint)?apikey=$($global:litmosconnection.apiKey)&source=$($global:litmosconnection.tenantName)"
-            Method = "DELETE"
+            URI = "https://$($global:litmosconnection.server)/$($endpoint)?source=$($global:litmosconnection.tenantName)"
+            Headers = @{ APIKey = $global:litmosconnection.apiKey }
+	    Method = "DELETE"
         }
 	} else {
 		Write-Error "Method $($method) not implemented"

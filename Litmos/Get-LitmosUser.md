@@ -31,7 +31,7 @@ Will return all users
 
 ### EXAMPLE 2
 ```
-Get-LitmosUser -all
+Get-LitmosUser -all -details
 ```
 
 Will return all users with details
